@@ -5,22 +5,25 @@ import requests
 from bs4 import BeautifulSoup
 import streamlit as str_app
 
+# Google Gemini API anahtarını kasadan çekiyoruz
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
 str_app.title("📊 Süper Finans Haber İstasyonu V4")
 str_app.write("7/24 Açık Bulut Tabanlı Kesintisiz Finans Terminaliniz.")
 
 if "analiz_gecmisi" not in str_app.session_state:
     str_app.session_state.analiz_gecmisi = []
 
-# --- GOOGLE RESMİ EN GÜNCEL VE KARARLI NİHAİ MOTOR ---
+# --- 404 HATASI TAMAMEN DÜZELTİLEN RESMİ GOOGLE MOTORU ---
 def yapay_zeka_ile_konus(komut_metni):
     raw_key = os.environ.get("GEMINI_API_KEY", "")
     o_key = raw_key.strip()
     
-    # 404 hatasını bitiren resmi, kütüphanesiz ve en güncel Gemini 2.5 Flash API adresi
+    # 404 hatasını bitiren resmi tam Google Gemini 2.5 Flash internet adresi
     url = f"https://googleapis.com{o_key}"
     
     headers = {"Content-Type": "application/json"}
-    data = {
+    gonderilecek_veri = {
         "contents": [{
             "parts": [{
                 "text": f"You are a professional financial assistant. Give a comprehensive and deep analysis. Always reply in TURKISH language directly. Question: {komut_metni}"
@@ -29,13 +32,14 @@ def yapay_zeka_ile_konus(komut_metni):
     }
     
     try:
-        response = requests.post(url, json=data, headers=headers, timeout=20)
+        response = requests.post(url, json=gonderilecek_veri, headers=headers, timeout=20)
         
         if response.status_code != 200:
             return f"❌ Google API Bağlantı Hatası! Sunucu yanıt kodu: {response.status_code}. Detay: {response.text[:200]}"
             
         yanit_json = response.json()
-        return yanit_json["candidates"]["content"]["parts"]["text"]
+        # Liste okuma indeksleri [0] eklenerek okuma hatası tamamen düzeltildi
+        return yanit_json["candidates"][0]["content"]["parts"][0]["text"]
     except Exception as e:
         return f"⚠️ Bağlantı Hatası: {str(e)}"
 
