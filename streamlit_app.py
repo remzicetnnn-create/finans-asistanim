@@ -75,9 +75,7 @@ if kullanici_yazili := str_app.chat_input("Mesajınızı buraya yazın..."):
         try:
             # 404 hatasını kalıcı olarak engellemek adına model 'gemini-1.5-flash' olarak revize edildi
             model_chat = genai.GenerativeModel(
-                model_name='gemini-1.5-flash',
-                system_instruction="Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe ve detaylı analizlerle cevapla."
-            )
+                model_name='gemini-1.5-flash',system_instruction="Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe ve detaylı analizlerle cevapla.")
             response_chat = model_chat.generate_content(kullanici_yazili)
             cevap = response_chat.text
             
