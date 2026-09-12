@@ -1,12 +1,16 @@
 import os
+import io
 import urllib.parse
 import datetime
 import requests
 from bs4 import BeautifulSoup
 import streamlit as str_app
+import google.generativeai as genai
+import time
 
-# Google Gemini API anahtarını kasadan çekiyoruz
+# Google Gemini API anahtarını kasadan çekip resmi olarak tanıtıyoruz
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+genai.configure(api_key=GEMINI_API_KEY)
 
 str_app.title("📊 Süper Finans Haber İstasyonu V4")
 str_app.write("7/24 Açık Bulut Tabanlı Kesintisiz Finans Terminaliniz.")
@@ -27,24 +31,20 @@ with str_app.sidebar:
     
     link_analiz_butonu = str_app.button("Linkleri Günlük Liste Olarak Tara ve Analiz Et")
 
-# --- GEMINI EVRENSEL API BAĞLANTI FONKSİYONU ---
+# --- RESMİ VE GÜVENLİ GEMINI BAĞLANTI MOTORU ---
 def gemini_ile_konus(komut_metni):
-    url = f"https://googleapis.com{GEMINI_API_KEY}"
-    headers = {"Content-Type": "application/json"}
-    # İstek yapısını Google sunucularının en sevdiği en yalın formata getirdik
-    data = {
-        "contents": [{
-            "parts": [{
-                "text": f"You are a professional financial assistant. Provide a detailed analysis and ALWAYS reply in TURKISH language. Question: {komut_metni}"
-            }]
-        }]
-    }
+    # Google'ın ücretsiz katmandaki bot filtresine takılmamak için milisaniyelik güvenlik beklemesi ekliyoruz
+    time.sleep(0.5)
     try:
-        response = requests.post(url, json=data, headers=headers, timeout=15)
-        yanit_json = response.json()
-        return yanit_json["candidates"][0]["content"]["parts"][0]["text"]
-    except:
-        return "⚠️ Yapay zeka motoru şu an yoğun, lütfen mesajınızı tekrar göndermeyi deneyin."
+        model = genai.GenerativeModel(
+            'gemini-1.5-flash',
+            system_instruction="Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe ve detaylı analizlerle cevapla."
+        )
+        response = model.generate_content(komut_metni)
+        return response.text
+    except Exception as e:
+        # Eğer sunucu yine de çok anlık kilitlenirse sistemi çökertme, kararlı modu koru
+        return "⚠️ Google sunucuları anlık kota sınırı uyguladı, lütfen 2 saniye sonra mesajınızı tekrar göndermeyi deneyin."
 
 # --- LİNK OKUMA VE ANALİZ MOTORU ---
 if link_analiz_butonu and link_girdisi:
@@ -59,15 +59,16 @@ if link_analiz_butonu and link_girdisi:
                 soup = BeautifulSoup(res.text, 'html.parser')
                 for s in soup(['script', 'style', 'nav', 'footer']): s.decompose()
                 temiz_yazi = " ".join(soup.get_text().split())
-                toplam_web_metni += f"\n[SOURCE: {link}]\n" + temiz_yazi[:2500]
+                toplam_web_metni += f"\n[KAYNAK: {link}]\n" + temiz_yazi[:2500]
             except:
                 pass
                 
     with str_app.spinner("Gemini verileri analiz ediyor..."):
         yapay_zeka_komutu = (
-            f"Analyze the following data chronologically. Filter developments regarding {takip_varligi} "
-            f"for the last {gun_sayisi} days. Summarize results as a daily list report in Turkish."
-            f"\n\nData:\n{toplam_web_metni}"
+            f"Aşağıdaki finansal internet verilerini kronolojik olarak incele. "
+            f"Sadece {takip_varligi} ile ilgili son {gun_sayisi} günlük gelişmeleri filtrele, "
+            f"sonuçları Türkçe kronolojik GÜNLÜK LİSTE raporu olarak özetle."
+            f"\n\nVeriler:\n{toplam_web_metni}"
         )
         rapor_sonucu = gemini_ile_konus(yapay_zeka_komutu)
         str_app.session_state.analiz_gecmisi.append({"role": "assistant", "content": rapor_sonucu})
