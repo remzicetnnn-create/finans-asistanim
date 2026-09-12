@@ -4,14 +4,10 @@ import datetime
 import requests
 from bs4 import BeautifulSoup
 import streamlit as str_app
-import google.generativeai as genai
+from langchain_community.llms import HuggingFaceEndpoint
 
-# Google Gemini gizli şifresini kasadan çekiyoruz
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-genai.configure(api_key=GEMINI_API_KEY)
-
-str_app.title("🚀 Süper Finans Asistanı V3 (Gemini Gücüyle)")
-str_app.write("Google Cloud Altyapısıyla Güçlendirilmiş, Kesintisiz ve Hatasız Finans Terminaliniz.")
+str_app.title("🚀 Süper Finans Asistanı V4 (Llama Açık Kaynak Gücüyle)")
+str_app.write("Hugging Face Sunucularıyla Güçlendirilmiş, Şifresiz ve Kesintisiz Finans Terminaliniz.")
 
 if "messages" not in str_app.session_state:
     str_app.session_state.messages = []
@@ -30,7 +26,7 @@ with str_app.sidebar:
     
     link_analiz_butonu = str_app.button("Görevleri Başlat ve Linkleri Analiz Et")
 
-# --- LİNK VE GÖREV ANALİZ MOTORU (GEMINI 1.5 FLASH) ---
+# --- LİNK VE GÖREV ANALİZ MOTORU (META LLAMA 3) ---
 if link_analiz_butonu and link_girdisi:
     linkler = [l.strip() for l in link_girdisi.split("\n") if l.strip()]
     toplam_metin = ""
@@ -43,22 +39,26 @@ if link_analiz_butonu and link_girdisi:
                 soup = BeautifulSoup(res.text, 'html.parser')
                 for s in soup(['script', 'style']): s.decompose()
                 temiz_yazi = " ".join(soup.get_text().split())
-                toplam_metin += f"\n[KAYNAK: {link}]\n" + temiz_yazi[:4000]
+                toplam_metin += f"\n[KAYNAK: {link}]\n" + temiz_yazi[:2000]
             except: 
                 pass
 
-    with str_app.spinner("Google Gemini verileri ve görevleri analiz ediyor..."):
-        # En kararlı resmi sürümü çağırıyoruz
-        model_analiz = genai.GenerativeModel('gemini-1.5-flash')
-        
-        komut = (
-            f"Sen bir yapay zeka finans ajanısın. Sana verilen internet verilerini kullanarak şu görevi yerine getir:\n"
-            f"GÖREV: {takip_varligi} varlığı için son {gun_sayisi} günlük hareketleri çıkar. Eğer son gün {alarm_limiti} Milyon dolardan fazla önemli bir para girişi saptarsan raporda acil durum uyarısı belirt. Sonuçları Türkçe kronolojik bir GÜNLÜK LİSTE raporu olarak yaz.\n\n"
-            f"İnternet Verileri:\n{toplam_metin}"
+    with str_app.spinner("Meta Llama verileri ve görevleri analiz ediyor..."):
+        # Şifre gerektirmeyen kurumsal açık kaynaklı sunucu bağlantısı
+        llm = HuggingFaceEndpoint(
+            repo_id="meta-llama/Meta-Llama-3-8B-Instruct",
+            temperature=0.1,
+            max_new_tokens=512
         )
         
-        response = model_analiz.generate_content(komut)
-        str_app.session_state.messages.append({"role": "assistant", "content": response.text})
+        komut = (
+            f"Sen profesyonel bir yapay zeka finans ajanısın. Aşağıdaki verileri incele. "
+            f"{takip_varligi} için son {gun_sayisi} günlük hareketleri günlük liste raporu olarak TÜRKÇE yaz. "
+            f"Eğer limit olan {alarm_limiti} Milyon dolardan fazla giriş varsa uyarı ekle.\n\nVeriler:\n{toplam_metin}"
+        )
+        
+        response = llm.invoke(komut)
+        str_app.session_state.messages.append({"role": "assistant", "content": response})
 
 # GEÇMİŞ MESAJLARI BASMA
 for message in str_app.session_state.messages:
@@ -77,20 +77,21 @@ if len(str_app.session_state.messages) > 0:
     if str_app.button("Metni Kopyalamak İçin Göster"):
         str_app.text_area("Seçip kopyalayabilirsiniz:", son_analiz_metni, height=200)
 
-# --- ANLIK YAZILI SOHBET MOTORU (EN EMİN SÜRÜM) ---
+# --- ANLIK SOHBET MOTORU (META LLAMA 3 KESİNTİSİZ BAĞLANTI) ---
 if kullanici_yazili := str_app.chat_input("Mesajınızı buraya yazın..."):
     str_app.session_state.messages.append({"role": "user", "content": kullanici_yazili})
     with str_app.chat_message("user"): 
         str_app.markdown(kullanici_yazili)
         
     with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
-        # Hata ihtimalini sıfırlamak için sohbet motorunu da kararlı ana sürüme geçirdik
-        model_chat = genai.GenerativeModel(
-            'gemini-1.5-flash',
-            system_instruction="Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe ve detaylı analizlerle cevapla."
+        # Şifresiz ve kısıtlamasız anlık sohbet bağlantısı
+        llm_chat = HuggingFaceEndpoint(
+            repo_id="meta-llama/Meta-Llama-3-8B-Instruct",
+            temperature=0.5,
+            max_new_tokens=512
         )
-        response_chat = model_chat.generate_content(kullanici_yazili)
-        cevap = response_chat.text
+        komut_chat = f"Sen profesyonel bir finans asistanısın. Şu soruyu tamamen Türkçe ve detaylıca cevapla:\n\nSoru: {kullanici_yazili}"
+        cevap = llm_chat.invoke(komut_chat)
         
     with str_app.chat_message("assistant"): 
         str_app.markdown(cevap)
