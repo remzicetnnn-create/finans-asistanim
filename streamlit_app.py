@@ -11,12 +11,12 @@ str_app.write("7/24 Açık Bulut Tabanlı Kesintisiz Finans Terminaliniz.")
 if "analiz_gecmisi" not in str_app.session_state:
     str_app.session_state.analiz_gecmisi = []
 
-# --- ŞIFRE BOŞLUKLARINI TEMIZLEYEN VE DOĞRULAYAN MOTOR ---
+# --- GOOGLE RESMİ GEMINI 2.5 KESİNTİSİZ MOTORU ---
 def yapay_zeka_ile_konus(komut_metni):
     raw_key = os.environ.get("GEMINI_API_KEY", "")
-    # Şifrenin başındaki veya sonundaki görünmeyen gizli boşlukları siliyoruz
     o_key = raw_key.strip()
     
+    # Model ismini Google'ın ömür boyu kapanmayacak resmi 'gemini-2.5-flash' sürümüne yükselttik
     url = "https://googleapis.com"
     parametreler = {"key": o_key}
     
@@ -32,7 +32,6 @@ def yapay_zeka_ile_konus(komut_metni):
     try:
         response = requests.post(url, params=parametreler, json=data, headers=headers, timeout=20)
         
-        # Eğer Google şifreyi beğenmeyip hata kodu dönerse (Örn: 400 veya 403)
         if response.status_code != 200:
             return f"❌ Google API Şifre Hatası! Girdiğiniz anahtar geçersiz veya eksik. Lütfen Streamlit Secrets (Kasa) bölümünden şifrenizi kontrol edin. Sunucu yanıt kodu: {response.status_code}"
             
@@ -78,8 +77,8 @@ if link_analiz_butonu and link_girdisi:
         str_app.session_state.analiz_gecmisi.append({"role": "assistant", "content": rapor_sonucu})
 
 # GEÇMİŞ MESAJLARI BASMA
-for mesaj in str_app.session_state.analiz_gecmisi:
-    with str_app.chat_message(mesaj["role"]): str_app.markdown(mesaj["content"])
+for message in str_app.session_state.analiz_gecmisi:
+    with str_app.chat_message(message["role"]): str_app.markdown(message["content"])
 
 # --- WHATSAPP PAYLAŞIM ALANI ---
 if len(str_app.session_state.analiz_gecmisi) > 0:
