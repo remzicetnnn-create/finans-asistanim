@@ -1,13 +1,13 @@
-import os
-import urllib.parse
-import requests
+os'u içe aktar
+urllib.parse'ı içe aktarın
+ithalat istekleri
 from bs4 import BeautifulSoup
 import streamlit as str_app
 
-str_app.title("ğŸ“Š SÃ¼per Finans Haber Ä°stasyonu V4")
-str_app.write("7/24 AÃ§Ä±k Bulut TabanlÄ± Kesintisiz Finans Terminaliniz.")
+str_app.title("ğŸ“Š Süper Finans Haber İstasyonu V4")
+str_app.write("7/24 Ağustos Bulut Tabanlı Kesintisiz Finans Terminaliniz.")
 
-if "analiz_gecmisi" not in str_app.session_state:
+"analiz_gecmisi" str_app.session_state'de değilse:
     str_app.session_state.analiz_gecmisi = []
 
 # --- GOOGLE GEMINI API MOTORU ---
@@ -15,89 +15,89 @@ def yapay_zeka_ile_konus(komut_metni):
     raw_key = os.environ.get("GEMINI_API_KEY", "")
     o_key = raw_key.strip()
 
-    if not o_key:
-        return "âŒ GEMINI_API_KEY bulunamadÄ±! LÃ¼tfen ortam deÄŸiÅŸkenini ayarlayÄ±n."
+    o_key değilse:
+        return "â Œ GEMINI_API_KEY bulunamadā! LÃ¼tfen ortam deāiŸkenini ayarlayān."
 
-    # DoÄŸru ve tam Gemini API endpoint'i
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    # Doğru ve tam Gemini API endpoint'i
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
     parametreler = {"key": o_key}
 
-    headers = {"Content-Type": "application/json"}
-    data = {
-        "contents": [{
-            "parts": [{
-                "text": f"You are a professional financial assistant. Give a comprehensive and deep analysis. Always reply in TURKISH language directly. Question: {komut_metni}"
+    başlıklar = {"Content-Type": "application/json"}
+    veri = {
+        "İçindekiler": [{
+            "parçalar": [{
+                "text": f"Siz profesyonel bir finans asistanısınız. Kapsamlı ve derinlemesine analiz yapın. Her zaman doğrudan Türkçe olarak cevap verin. Soru: {komut_metni}"
             }]
         }]
     }
 
-    try:
-        response = requests.post(url, params=parametreler, json=data, headers=headers, timeout=20)
+    denemek:
+        yanıt = requests.post(url, params=parametreler, json=data, headers=headers, timeout=20)
 
-        if response.status_code != 200:
-            return f"âŒ Google API BaÄŸlantÄ± HatasÄ±! Sunucu yanÄ±t kodu: {response.status_code}. Detay: {response.text[:200]}"
+        Eğer response.status_code 200 değilse:
+            return f"â Œ Google API BaÄŸlantÄ± Hatası! Sunucu yanÄ±t kodu: {response.status_code}. Detay: {response.text[:200]}"
 
         yanit_json = response.json()
 
-        # candidates ve parts birer LÄ°STE, bu yÃ¼zden [0] indeksi zorunlu
-        if not yanit_json.get("candidates"):
-            return f"âš ï¸ YanÄ±t boÅŸ dÃ¶ndÃ¼. Ham veri: {str(yanit_json)[:300]}"
+        # adaylar ve parçalar birer LÄ°STE, bu yuzden [0] indeksi zorunludur
+        yanit_json.get("candidates") başarılı değilse:
+            return f"âš ï¸ Yanıt boÅŸ dÃ¶ndÃ¼. Ham veri: {str(yanit_json)[:300]}"
 
-        return yanit_json["candidates"][0]["content"]["parts"][0]["text"]
+        yanit_json["adaylar"][0]["içerik"]["parçalar"][0]["metin"] döndür
 
-    except Exception as e:
-        return f"âš ï¸ BaÄŸlantÄ± HatasÄ±: {str(e)}"
+    e istisnası hariç:
+        return f"âš ï¸ BaÄŸlantÄ± HatasÄ±: {str(e)}"
 
 # --- YAN PANEL AYARLARI ---
-with str_app.sidebar:
-    str_app.header("ğŸ“° Dinamik Ä°stihbarat AyarlarÄ±")
-    takip_varligi = str_app.text_input("ğŸ¯ Takip Edilecek VarlÄ±k / ETF:", value="VOO ETF")
-    gun_sayisi = str_app.slider("ğŸ“… Ä°nceleme GÃ¼n SayÄ±sÄ±:", min_value=1, max_value=30, value=15)
+str_app.sidebar ile:
+    str_app.header("ğŸ“° Dinamik İstihbarat AyarlarıÄ±")
+    takip_varligi = str_app.text_input("ğŸŽ¯ Takip Edilecek Varlık / ETF:", value="VOO ETF")
+    gun_sayisi = str_app.slider("ğŸ“… İnceleme Gün Sayısı:", min_value=1, max_value=30, value=15)
 
     str_app.markdown("---")
-    str_app.subheader("ğŸ”— Web Link Ä°stihbaratÄ±")
-    link_girdisi = str_app.text_area("Taranacak Web Linkleri:", value="https://coindesk.com")
-    link_analiz_butonu = str_app.button("Linkleri GÃ¼nlÃ¼k Liste Olarak Tara ve Analiz Et")
+    str_app.subheader("ğŸ"— Web Link Ä°stihbaratÄ±")
+    link_girdisi = str_app.text_area("Taranacak Web Bağlantıları:", value="https://coindesk.com")
+    link_analiz_butonu = str_app.button("Linkleri Günlük Liste Olarak Tara ve Analiz Et")
 
-# --- LÄ°NK OKUMA VE ANALÄ°Z MOTORU ---
-if link_analiz_butonu and link_girdisi:
+# --- LİNK OKUMA VE ANALİZ MOTORU ---
+link_analiz_butonu ve link_girdisi ise:
     linkler = [l.strip() for l in link_girdisi.split("\n") if l.strip()]
     topham_web_metni = ""
 
-    with str_app.spinner("Kaynak siteler taranÄ±yor..."):
-        for link in linkler:
-            try:
-                headers = {'User-Agent': 'Mozilla/5.0'}
+    with str_app.spinner("Kaynak siteler taranıyor..."):
+        Linkler'deki bağlantı için:
+            denemek:
+                başlıklar = {'User-Agent': 'Mozilla/5.0'}
                 res = requests.get(link, headers=headers, timeout=10)
-                soup = BeautifulSoup(res.text, 'html.parser')
+                çorba = BeautifulSoup(res.text, 'html.parser')
                 for s in soup(['script', 'style', 'nav', 'footer']):
                     s.decompose()
                 temiz_yazi = " ".join(soup.get_text().split())
-                topham_web_metni += f"\n[SOURCE: {link}]\n" + temiz_yazi[:2500]
-            except Exception as e:
-                str_app.sidebar.warning(f"âš ï¸ {link} okunamadÄ±: {str(e)}")
+                topham_web_metni += f"\n[KAYNAK: {link}]\n" + temiz_yazi[:2500]
+            e istisnası hariç:
+                str_app.sidebar.warning(f"âš ï¸ {link} okunamadÄ±: {str(e)}")
 
-    with str_app.spinner("Yapay zeka verileri analiz ediyor..."):
+    with str_app.spinner("Yapay zeka verilerini analiz ediyor..."):
         yapay_zeka_komutu = (
-            f"Analyze the following financial data chronologically. Filter developments regarding {takip_varligi} "
-            f"for the last {gun_sayisi} days. Summarize results as a daily list report in Turkish."
-            f"\n\nData:\n{topham_web_metni}"
+            "Aşağıdaki finansal verileri kronolojik olarak analiz edin. {takip_varligi} ile ilgili gelişmeleri filtreleyin."
+            "Son {gün_sayısı} gün için sonuçları Türkçe olarak günlük liste raporu şeklinde özetleyin."
+            f"\n\nVeri:\n{topham_web_metni}"
         )
         rapor_sonucu = yapay_zeka_ile_konus(yapay_zeka_komutu)
-        str_app.session_state.analiz_gecmisi.append({"role": "assistant", "content": rapor_sonucu})
+        str_app.session_state.analiz_gecmisi.append({"rol": "asistan", "içerik": rapor_sonucu})
 
-# GEÃ‡MÄ°Å MESAJLARI BASMA
-for message in str_app.session_state.analiz_gecmisi:
-    with str_app.chat_message(message["role"]):
-        str_app.markdown(message["content"])
+# GEÇMİŞ MESAJLARI BASMA
+str_app.session_state.analiz_gecmisi'deki mesaj için:
+    str_app.chas_message(message["role"]) ile:
+        str_app.markdown(mesaj["içerik"])
 
-# --- WHATSAPP PAYLAÅIM ALANI ---
-if len(str_app.session_state.analiz_gecmisi) > 0:
-    son_rapor = str_app.session_state.analiz_gecmisi[-1]["content"]
+# --- WHATSAPP PAYLAŞIM ALANI ---
+eğer len(str_app.session_state.analiz_gecmisi) > 0:
+    son_rapor = str_app.session_state.analiz_gecmisi[-1]["içerik"]
     kodlanmis_metin = urllib.parse.quote(son_rapor[:800])
     whatsapp_linki = f"https://wa.me/?text={kodlanmis_metin}"
     str_app.markdown("---")
-    str_app.subheader("ğŸ“¢ Raporu PaylaÅŸ")
+    str_app.subheader("ğŸ“¢Rapor PaylaŞ")
     str_app.sidebar.markdown(
         f' <a href="{whatsapp_linki}" target="_blank">'
         f'<button style="background-color:#25D366;color:white;border:none;'
@@ -107,14 +107,14 @@ if len(str_app.session_state.analiz_gecmisi) > 0:
     )
 
 # --- ANLIK SOHBET ALANI ---
-if kullanici_yazili := str_app.chat_input("YazÄ±n veya soru sorun..."):
+if kullanıcıci_yazili := str_app.chat_input("Yazın veya soru sorunu..."):
     str_app.session_state.analiz_gecmisi.append({"role": "user", "content": kullanici_yazili})
-    with str_app.chat_message("user"):
+    str_app.chas_message("user") ile:
         str_app.markdown(kullanici_yazili)
 
-    with str_app.spinner("Yapay Zeka YanÄ±tlÄ±yor..."):
+    with str_app.spinner("Yapay Zeka Yanıyor..."):
         cevap = yapay_zeka_ile_konus(kullanici_yazili)
 
-    with str_app.chat_message("assistant"):
+    str_app.chas_message("assistant") ile:
         str_app.markdown(cevap)
-    str_app.session_state.analiz_gecmisi.append({"role": "assistant", "content": cevap})
+    str_app.session_state.analiz_gecmisi.append({"rol": "asistan", "içerik": cevap})
