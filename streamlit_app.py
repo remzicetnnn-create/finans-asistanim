@@ -27,17 +27,24 @@ with str_app.sidebar:
     
     link_analiz_butonu = str_app.button("Linkleri Günlük Liste Olarak Tara ve Analiz Et")
 
-# --- GEMINI SAF API BAĞLANTI FONKSİYONU ---
+# --- GEMINI EVRENSEL API BAĞLANTI FONKSİYONU ---
 def gemini_ile_konus(komut_metni):
     url = f"https://googleapis.com{GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
-    data = {"contents": [{"parts": [{"text": komut_metni}]}]}
+    # İstek yapısını Google sunucularının en sevdiği en yalın formata getirdik
+    data = {
+        "contents": [{
+            "parts": [{
+                "text": f"You are a professional financial assistant. Provide a detailed analysis and ALWAYS reply in TURKISH language. Question: {komut_metni}"
+            }]
+        }]
+    }
     try:
         response = requests.post(url, json=data, headers=headers, timeout=15)
         yanit_json = response.json()
         return yanit_json["candidates"][0]["content"]["parts"][0]["text"]
     except:
-        return "⚠️ Yapay zeka motoru yanıt üretemedi, lütfen tekrar deneyin."
+        return "⚠️ Yapay zeka motoru şu an yoğun, lütfen mesajınızı tekrar göndermeyi deneyin."
 
 # --- LİNK OKUMA VE ANALİZ MOTORU ---
 if link_analiz_butonu and link_girdisi:
@@ -52,16 +59,15 @@ if link_analiz_butonu and link_girdisi:
                 soup = BeautifulSoup(res.text, 'html.parser')
                 for s in soup(['script', 'style', 'nav', 'footer']): s.decompose()
                 temiz_yazi = " ".join(soup.get_text().split())
-                toplam_web_metni += f"\n[KAYNAK: {link}]\n" + temiz_yazi[:3000]
+                toplam_web_metni += f"\n[SOURCE: {link}]\n" + temiz_yazi[:2500]
             except:
                 pass
                 
     with str_app.spinner("Gemini verileri analiz ediyor..."):
         yapay_zeka_komutu = (
-            f"Sen profesyonel bir finans analiz ajanısın. Aşağıdaki verileri kronolojik olarak incele. "
-            f"Sadece {takip_varligi} ile ilgili son {gun_sayisi} günlük gelişmeleri filtrele, "
-            f"sonuçları Türkçe kronolojik GÜNLÜK LİSTE raporu olarak özetle."
-            f"\n\nVeriler:\n{toplam_web_metni}"
+            f"Analyze the following data chronologically. Filter developments regarding {takip_varligi} "
+            f"for the last {gun_sayisi} days. Summarize results as a daily list report in Turkish."
+            f"\n\nData:\n{toplam_web_metni}"
         )
         rapor_sonucu = gemini_ile_konus(yapay_zeka_komutu)
         str_app.session_state.analiz_gecmisi.append({"role": "assistant", "content": rapor_sonucu})
@@ -90,8 +96,7 @@ if kullanici_yazili := str_app.chat_input("Yazın veya soru sorun..."):
         str_app.markdown(kullanici_yazili)
         
     with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
-        sohbet_komutu = f"Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe ve detaylı analizlerle cevapla. Soru: {kullanici_yazili}"
-        cevap = gemini_ile_konus(sohbet_komutu)
+        cevap = gemini_ile_konus(kullanici_yazili)
         
     with str_app.chat_message("assistant"):
         str_app.markdown(cevap)
