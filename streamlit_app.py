@@ -10,10 +10,9 @@ import google.generativeai as genai
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 
-str_app.title("🚀 Süper Finans Asistanı V3 (Gemini Gücüyle)")
+str_app.title("🚀 Süper Finans Asistanı V3 (Gemini 2.5 Gücüyle)")
 str_app.write("Google Cloud Altyapısıyla Güçlendirilmiş, Kesintisiz ve Hatasız Finans Terminaliniz.")
 
-# Hafıza (Session State) Tanımlamaları
 if "messages" not in str_app.session_state:
     str_app.session_state.messages = []
 
@@ -31,7 +30,7 @@ with str_app.sidebar:
     
     link_analiz_butonu = str_app.button("Görevleri Başlat ve Linkleri Analiz Et")
 
-# --- LİNK VE GÖREV ANALİZ MOTORU ---
+# --- LİNK VE GÖREV ANALİZ MOTORU (GEMINI 2.5 FLASH) ---
 if link_analiz_butonu and link_girdisi:
     linkler = [l.strip() for l in link_girdisi.split("\n") if l.strip()]
     toplam_metin = ""
@@ -49,8 +48,8 @@ if link_analiz_butonu and link_girdisi:
                 pass
 
     with str_app.spinner("Google Gemini verileri ve görevleri analiz ediyor..."):
-        # Eski kütüphanelerin tanıdığı temel model ismi kullanıldı
-        model_analiz = genai.GenerativeModel('gemini-pro')
+        # Ağır link tarama işleri için yeni nesil kararlı Gemini 2.5 Flash modelini atadık
+        model_analiz = genai.GenerativeModel('gemini-2.5-flash')
         
         komut = (
             f"Sen bir yapay zeka finans ajanısın. Sana verilen internet verilerini kullanarak şu görevi yerine getir:\n"
@@ -61,33 +60,12 @@ if link_analiz_butonu and link_girdisi:
         response = model_analiz.generate_content(komut)
         str_app.session_state.messages.append({"role": "assistant", "content": response.text})
 
-# --- GEÇMİŞ MESAJLARI EKRANA BASMA ---
+# GEÇMİŞ MESAJLARI BASMA
 for message in str_app.session_state.messages:
     with str_app.chat_message(message["role"]): 
         str_app.markdown(message["content"])
 
-# --- ANLIK SOHBET GİRİŞİ VE MOTORU ---
-if kullanici_yazili := str_app.chat_input("Mesajınızı buraya yazın..."):
-    str_app.session_state.messages.append({"role": "user", "content": kullanici_yazili})
-    with str_app.chat_message("user"): 
-        str_app.markdown(kullanici_yazili)
-        
-    with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
-        try:
-            # Eski sürüm uyumluluğu için model ismi 'gemini-pro' yapıldı ve system_instruction kaldırıldı
-            model_chat = genai.GenerativeModel(model_name='gemini-pro')
-            response_chat = model_chat.generate_content("Sistem Talimatı: Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe cevapla.\n\nKullanıcı Sorusu: " + kullanici_yazili)
-            cevap = response_chat.text
-            
-            with str_app.chat_message("assistant"): 
-                str_app.markdown(cevap)
-            str_app.session_state.messages.append({"role": "assistant", "content": cevap})
-            
-            str_app.rerun()
-        except Exception as e:
-            str_app.error(f"Bir hata oluştu: {str(e)}")
-
-# --- WHATSAPP VE PAYLAŞIM ALANI ---
+# --- WHATSAPP PAYLAŞIM ALANI ---
 if len(str_app.session_state.messages) > 0:
     son_analiz_metni = str_app.session_state.messages[-1]["content"]
     kodlanmis_metin = urllib.parse.quote(son_analiz_metni[:800])
@@ -98,3 +76,22 @@ if len(str_app.session_state.messages) > 0:
     str_app.sidebar.markdown(f' <a href="{whatsapp_linki}" target="_blank"><button style="background-color:#25D366;color:white;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;width:100%;">🟢 WhatsApp ile Paylaş</button></a>', unsafe_allow_html=True)
     if str_app.button("Metni Kopyalamak İçin Göster"):
         str_app.text_area("Seçip kopyalayabilirsiniz:", son_analiz_metni, height=200)
+
+# --- ANLIK YAZILI SOHBET MOTORU (GEMINI 2.5 FLASH İLE IŞIK HIZINDA CEVAP) ---
+if kullanici_yazili := str_app.chat_input("Mesajınızı buraya yazın..."):
+    str_app.session_state.messages.append({"role": "user", "content": kullanici_yazili})
+    with str_app.chat_message("user"): 
+        str_app.markdown(kullanici_yazili)
+        
+    with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
+        # Sohbet alanındaki kilitlenmeyi aşmak için ömür boyu açık olan resmi gemini-2.5-flash modeline geçtik
+        model_chat = genai.GenerativeModel(
+            'gemini-2.5-flash',
+            system_instruction="Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe ve detaylı analizlerle cevapla."
+        )
+        response_chat = model_chat.generate_content(kullanici_yazili)
+        cevap = response_chat.text
+        
+    with str_app.chat_message("assistant"): 
+        str_app.markdown(cevap)
+    str_app.session_state.messages.append({"role": "assistant", "content": cevap})
