@@ -48,8 +48,8 @@ if link_analiz_butonu and link_girdisi:
                 pass
 
     with str_app.spinner("Google Gemini verileri ve görevleri analiz ediyor..."):
-        # 404 Hatasını önlemek için güncel kararlı takı eklendi
-        model_analiz = genai.GenerativeModel('gemini-1.5-flash-latest')
+        # Eski bağımlılıklarla en uyumlu model ismi seçildi
+        model_analiz = genai.GenerativeModel('gemini-1.5-flash')
         
         komut = (
             f"Sen bir yapay zeka finans ajanısın. Sana verilen internet verilerini kullanarak şu görevi yerine getir:\n"
@@ -65,38 +65,34 @@ for message in str_app.session_state.messages:
     with str_app.chat_message(message["role"]): 
         str_app.markdown(message["content"])
 
-# --- ANLIK YAZILI SOHBET MOTORU (GEMINI PRO) ---
+# --- ANLIK YAZILI SOHBET MOTORU (GEMINI FLASH SOHBET) ---
 if kullanici_yazili := str_app.chat_input("Mesajınızı buraya yazın..."):
-    # Kullanıcı mesajını kaydet ve ekrana bas
     str_app.session_state.messages.append({"role": "user", "content": kullanici_yazili})
     with str_app.chat_message("user"): 
         str_app.markdown(kullanici_yazili)
         
     with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
         try:
-            # 404 Hatasını önlemek ve kararlı çalışması için 'gemini-1.5-pro-latest' sürümüne güncellendi
+            # 404 hatasını kalıcı olarak engellemek adına model 'gemini-1.5-flash' olarak revize edildi
             model_chat = genai.GenerativeModel(
-                model_name='gemini-1.5-pro-latest',
+                model_name='gemini-1.5-flash',
                 system_instruction="Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe ve detaylı analizlerle cevapla."
             )
             response_chat = model_chat.generate_content(kullanici_yazili)
             cevap = response_chat.text
             
-            # Asistan yanıtını ekrana bas ve kaydet
             with str_app.chat_message("assistant"): 
                 str_app.markdown(cevap)
             str_app.session_state.messages.append({"role": "assistant", "content": cevap})
             
-            # Sayfayı yenileyerek element hiyerarşisini koru
             str_app.rerun()
         except Exception as e:
             str_app.error(f"Bir hata oluştu: {str(e)}")
 
-# --- WHATSAPP VE PAYLAŞIM ALANI (Sayfa Sonu) ---
+# --- WHATSAPP VE PAYLAŞIM ALANI ---
 if len(str_app.session_state.messages) > 0:
     son_analiz_metni = str_app.session_state.messages[-1]["content"]
     kodlanmis_metin = urllib.parse.quote(son_analiz_metni[:800])
-    # WhatsApp resmi yönlendirme API linki tam formatıyla düzeltildi
     whatsapp_linki = f"https://whatsapp.com{kodlanmis_metin}"
     
     str_app.markdown("---")
