@@ -39,8 +39,8 @@ if kullanici_sorusu := str_app.chat_input("Mesajınızı yazın..."):
         if 'metadata' in match and 'text' in match['metadata']:
             kaynak_metinler += match['metadata']['text'] + "\n"
 
-    # Yapay zekadan yanıt alma
-    llm = langchain_groq.ChatGroq(temperature=0.3, groq_api_key=GROQ_API_KEY, model_name="llama-3.1-b-instant" )
+    # Yapay zekadan yanıt alma (En güncel ve kesin açık olan ücretsiz GPT OSS modeli)
+    llm = langchain_groq.ChatGroq(temperature=0.3, groq_api_key=GROQ_API_KEY, model_name="openai/gpt-oss-20b")
     komut = f"Eğer kaynakta bilgi varsa ona göre, yoksa kendi genel finans bilgine dayanarak soruyu Türkçe cevapla.\n\nKaynak:\n{kaynak_metinler}\n\nSoru: {kullanici_sorusu}"
     
     cevap = llm.invoke(komut)
@@ -48,4 +48,3 @@ if kullanici_sorusu := str_app.chat_input("Mesajınızı yazın..."):
     with str_app.chat_message("assistant"):
         str_app.markdown(cevap.content)
     str_app.session_state.messages.append({"role": "assistant", "content": cevap.content})
-  
