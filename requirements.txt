@@ -1,5 +1,3 @@
 streamlit
-langchain-community
-huggingface_hub
 beautifulsoup4
 requests
