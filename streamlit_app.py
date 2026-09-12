@@ -5,17 +5,9 @@ import requests
 from bs4 import BeautifulSoup
 import streamlit as str_app
 import langchain_groq
-from pinecone import Pinecone
-from langchain_community.embeddings import HuggingFaceEmbeddings
 
-# Gizli kasadan şifreleri çekme
+# Gizli kasadan şifreyi çekme
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-PINECONE_API_KEY = os.environ.get("PINECONE_API_KEY")
-
-# Altyapı bağlantıları
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-pc = Pinecone(api_key=PINECONE_API_KEY)
-index = pc.Index("yapay-zeka-hafizam")
 
 str_app.title("🎙️ Süper Finans Asistanı V2")
 str_app.write("7/24 Açık Bulut Tabanlı Dinamik Finans Terminaliniz.")
@@ -27,7 +19,6 @@ if "messages" not in str_app.session_state:
 with str_app.sidebar:
     str_app.header("📰 Dinamik Görev Ayarları")
     
-    # Kullanıcının dinamik olarak yönetebileceği alanlar
     takip_varligi = str_app.text_input("🎯 Takip Edilecek Varlık / ETF:", value="VOO ETF")
     gun_sayisi = str_app.slider("📅 Kaç Günlük Veri İncelensin?:", min_value=1, max_value=30, value=15)
     alarm_limiti = str_app.number_input("🚨 Para Girişi Alarm Limiti (Milyon $):", min_value=1, value=500)
@@ -86,23 +77,15 @@ if len(str_app.session_state.messages) > 0:
     if str_app.button("Metni Kopyalamak İçin Göster"):
         str_app.text_area("Seçip kopyalayabilirsiniz:", son_analiz_metni, height=200)
 
-# --- ANLIK YAZILI SOHBET MOTORU (ÜCRETSİZ EN ÜST SEVİYE DEV MODEL) ---
+# --- ANLIK YAZILI SOHBET MOTORU (EN ÜST SEVİYE VE HATASIZ SÜRÜM) ---
 if kullanici_yazili := str_app.chat_input("Mesajınızı buraya yazın..."):
     str_app.session_state.messages.append({"role": "user", "content": kullanici_yazili})
     with str_app.chat_message("user"): 
         str_app.markdown(kullanici_yazili)
         
-    soru_vektoru = embeddings.embed_query(kullanici_yazili)
-    arama_sonucu = index.query(vector=soru_vektoru, top_k=2, include_metadata=True)
-    kaynak_metinler = ""
-    for match in arama_sonucu['matches']:
-        if 'metadata' in match and 'text' in match['metadata']: 
-            kaynak_metinler += match['metadata']['text'] + "\n"
-        
     with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
-        # Ses karmaşası kalktığı için artık ücretsiz katmanda kilitlenmeyen en zeki modeli tanımlayabiliyoruz
         llm_chat = langchain_groq.ChatGroq(temperature=0.4, groq_api_key=GROQ_API_KEY, model_name="llama-3.3-70b-specdec")
-        komut = f"Kaynak verilere veya genel bilgine göre soruyu Türkçe detaylıca cevapla:\nKaynak:\n{kaynak_metinler}\nSoru: {kullanici_yazili}"
+        komut = f"Genel finans bilgine dayanarak şu soruyu Türkçe detaylıca cevapla:\n\nSoru: {kullanici_yazili}"
         cevap = llm_chat.invoke(komut).content
         
     with str_app.chat_message("assistant"): 
