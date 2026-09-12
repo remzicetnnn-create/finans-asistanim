@@ -48,7 +48,7 @@ if link_analiz_butonu and link_girdisi:
                 pass
 
     with str_app.spinner("Google Gemini verileri ve görevleri analiz ediyor..."):
-        # Ağır link tarama işleri için yeni nesil kararlı Gemini 2.5 Flash modelini atadık
+        # Ağır link tarama işleri için yeni nesil resmi gemini-2.5-flash modelini atadık
         model_analiz = genai.GenerativeModel('gemini-2.5-flash')
         
         komut = (
@@ -77,14 +77,14 @@ if len(str_app.session_state.messages) > 0:
     if str_app.button("Metni Kopyalamak İçin Göster"):
         str_app.text_area("Seçip kopyalayabilirsiniz:", son_analiz_metni, height=200)
 
-# --- ANLIK YAZILI SOHBET MOTORU (GEMINI 2.5 FLASH İLE IŞIK HIZINDA CEVAP) ---
+# --- ANLIK YAZILI SOHBET MOTORU (GEMINI 2.5 FLASH ILE KESİNTİSİZ BAĞLANTI) ---
 if kullanici_yazili := str_app.chat_input("Mesajınızı buraya yazın..."):
     str_app.session_state.messages.append({"role": "user", "content": kullanici_yazili})
     with str_app.chat_message("user"): 
         str_app.markdown(kullanici_yazili)
         
     with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
-        # Sohbet alanındaki kilitlenmeyi aşmak için ömür boyu açık olan resmi gemini-2.5-flash modeline geçtik
+        # Sohbet alanındaki kilitlenmeyi aşmak için en resmi ve kararlı gemini-2.5-flash modeline geçtik
         model_chat = genai.GenerativeModel(
             'gemini-2.5-flash',
             system_instruction="Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe ve detaylı analizlerle cevapla."
