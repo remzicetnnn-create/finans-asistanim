@@ -1,4 +1,5 @@
-google-generativeai>=0.8.3
-streamlit>=1.35.0
-requests>=2.31.0
-beautifulsoup4>=4.12.0
+streamlit
+langchain-community
+huggingface_hub
+beautifulsoup4
+requests
