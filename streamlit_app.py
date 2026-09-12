@@ -11,14 +11,13 @@ str_app.write("7/24 Açık Bulut Tabanlı Kesintisiz Finans Terminaliniz.")
 if "analiz_gecmisi" not in str_app.session_state:
     str_app.session_state.analiz_gecmisi = []
 
-# --- GOOGLE RESMİ EN KARARLI REZERV MOTORU ---
+# --- GOOGLE RESMİ EN GÜNCEL VE KARARLI NİHAİ MOTOR ---
 def yapay_zeka_ile_konus(komut_metni):
     raw_key = os.environ.get("GEMINI_API_KEY", "")
     o_key = raw_key.strip()
     
-    # Adres yapısını Google'ın en eski ve en kararlı 'gemini-1.5-flash' ana hattına sabitledik
-    url = "https://googleapis.com"
-    parametreler = {"key": o_key}
+    # 404 hatasını bitiren resmi, kütüphanesiz ve en güncel Gemini 2.5 Flash API adresi
+    url = f"https://googleapis.com{o_key}"
     
     headers = {"Content-Type": "application/json"}
     data = {
@@ -30,9 +29,8 @@ def yapay_zeka_ile_konus(komut_metni):
     }
     
     try:
-        response = requests.post(url, params=parametreler, json=data, headers=headers, timeout=20)
+        response = requests.post(url, json=data, headers=headers, timeout=20)
         
-        # Eğer sunucudan 404 veya başka bir hata kodu dönerse detaylı hata logunu ekrana bas
         if response.status_code != 200:
             return f"❌ Google API Bağlantı Hatası! Sunucu yanıt kodu: {response.status_code}. Detay: {response.text[:200]}"
             
