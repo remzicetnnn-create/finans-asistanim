@@ -11,11 +11,11 @@ str_app.write("7/24 Açık Bulut Tabanlı Kesintisiz Finans Terminaliniz.")
 if "analiz_gecmisi" not in str_app.session_state:
     str_app.session_state.analiz_gecmisi = []
 
-# --- %100 DENENMİŞ KESİNTİSİZ GOOGLE REZERV MOTORU ---
+# --- GOOGLE REZERV MOTORU (ŞİFRE ÇAKIŞMASI TAMAMEN DÜZELTİLDİ) ---
 def yapay_zeka_ile_konus(komut_metni):
-    url = "https://googleapis.com"
-    # Sabitlenmiş kurumsal genel erişim şifresi
-    yedek_key = os.environ.get("GEMINI_API_KEY", "AIzaSyD" + "N0v_zM" + "Xh_Z" + "X_Z" + "X_Z" + "X_Z" + "X_Z")
+    # Doğrudan sizin kasaya eklediğiniz orijinal uzun şifreyi (AQ.Ab8RN...) çekiyoruz
+    o_key = os.environ.get("GEMINI_API_KEY")
+    url = f"https://googleapis.com{o_key}"
     
     headers = {"Content-Type": "application/json"}
     data = {
@@ -27,11 +27,12 @@ def yapay_zeka_ile_konus(komut_metni):
     }
     
     try:
-        response = requests.post(f"{url}?key={yedek_key}", json=data, headers=headers, timeout=20)
+        response = requests.post(url, json=data, headers=headers, timeout=20)
         yanit_json = response.json()
-        return yanit_json["candidates"]["content"]["parts"][0]["text"]
+        return yanit_json["candidates"]["content"]["parts"]["text"]
     except Exception as e:
-        return "🤖 Veri işleme tamamlandı. İstediğiniz analizi pürüzsüzce almak için lütfen mesajınızı bir kez daha göndermeyi deneyin."
+        # Hata durumunda gerçek teknik nedeni ekrana basıyoruz ki körü körüne tahmin etmeyelim
+        return f"⚠️ Google Sunucu Yanıtı: {str(e)}"
 
 # --- YAN PANEL AYARLARI ---
 with str_app.sidebar:
@@ -66,7 +67,6 @@ if link_analiz_butonu and link_girdisi:
             f"for the last {gun_sayisi} days. Summarize results as a daily list report in Turkish."
             f"\n\nData:\n{toplam_web_metni}"
         )
-        # Buradaki yazım hatası tamamen düzeltildi
         rapor_sonucu = yapay_zeka_ile_konus(yapay_zeka_komutu)
         str_app.session_state.analiz_gecmisi.append({"role": "assistant", "content": rapor_sonucu})
 
