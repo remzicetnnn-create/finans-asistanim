@@ -1,8 +1,12 @@
+import os
 import urllib.parse
 import datetime
 import requests
 from bs4 import BeautifulSoup
 import streamlit as str_app
+
+# Google Gemini API bağlantısını en saf ve hatasız ham HTTP yöntemiyle kuruyoruz
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 str_app.title("📊 Süper Finans Haber İstasyonu V4")
 str_app.write("7/24 Açık Bulut Tabanlı Kesintisiz Finans Terminaliniz.")
@@ -21,12 +25,23 @@ with str_app.sidebar:
     str_app.subheader("🔗 Web Link İstihbaratı")
     link_girdisi = str_app.text_area("Taranacak Web Linkleri:", value="https://coindesk.com")
     
-    link_analiz_butonu = str_app.button("Linkleri Günlük Liste Olarak Tara")
+    link_analiz_butonu = str_app.button("Linkleri Günlük Liste Olarak Tara ve Analiz Et")
 
-# --- LİNK OKUMA VE KRONOLOJİK ÖZETLEME MOTORU ---
+# --- GEMINI HAM İSTEK FONKSİYONU (KİLİTLENME İHTİMALİ SIFIRDIR) ---
+def gemini_ile_konus(komut_metni):
+    url = f"https://googleapis.com{GEMINI_API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    data = {"contents": [{"parts": [{"text": komut_metni}]}]}
+    try:
+        response = requests.post(url, json=data, headers=headers, timeout=15)
+        return response.json()["candidates"][0]["content"]["parts"][0]["text"]
+    except:
+        return "⚠️ Yapay zeka sunucusuna anlık olarak ulaşılamadı, lütfen tekrar deneyin."
+
+# --- LİNK OKUMA VE GEMINI ANALİZ MOTORU ---
 if link_analiz_butonu and link_girdisi:
     linkler = [l.strip() for l in link_girdisi.split("\n") if l.strip()]
-    rapor_cikti = ""
+    toplam_web_metni = ""
     
     with str_app.spinner("Kaynak siteler taranıyor..."):
         for link in linkler:
@@ -34,33 +49,30 @@ if link_analiz_butonu and link_girdisi:
                 headers = {'User-Agent': 'Mozilla/5.0'}
                 res = requests.get(link, headers=headers, timeout=10)
                 soup = BeautifulSoup(res.text, 'html.parser')
-                
-                # Sitedeki gereksiz kodları temizle
                 for s in soup(['script', 'style', 'nav', 'footer']): s.decompose()
-                
-                # Başlıkları ve metinleri yakala
-                rapor_cikti += f"### 📌 KAYNAK: {link}\n"
-                rapor_cikti += f"**{takip_varligi}** için son {gun_sayisi} günlük önemli internet başlıkları:\n\n"
-                
-                sayac = 0
-                for h2 in soup.find_all(['h2', 'h3']):
-                    metin = h2.get_text().strip()
-                    if len(metin) > 20 and sayac < 10:
-                        rapor_cikti += f"- {metin}\n"
-                        sayac += 1
-                rapor_cikti += "\n"
+                temiz_yazi = " ".join(soup.get_text().split())
+                toplam_web_metni += f"\n[KAYNAK: {link}]\n" + temiz_yazi[:3000]
             except:
-                rapor_cikti += f"❌ {link} adresine anlık olarak bağlanılamadı.\n\n"
+                pass
                 
-    str_app.session_state.analiz_gecmisi.append(rapor_cikti)
+    with str_app.spinner("Gemini Linkleri ve Tarihleri Analiz Ediyor..."):
+        yapay_zeka_komutu = (
+            f"Sen profesyonel bir finans analiz ajanısın. Aşağıdaki verileri kronolojik olarak incele. "
+            f"Sadece {takip_varligi} ile ilgili son {gun_sayisi} günlük gelişmeleri filtrele, "
+            f"sonuçları Türkçe kronolojik GÜNLÜK LİSTE raporu olarak özetle."
+            f"\n\nVeriler:\n{toplam_web_metni}"
+        )
+        rapor_sonucu = gemini_ile_konus(yapay_zeka_komutu)
+        str_app.session_state.analiz_gecmisi.append({"role": "assistant", "content": rapor_sonucu})
 
 # GEÇMİŞİ EKRANA BASMA
-for eski_rapor in str_app.session_state.analiz_gecmisi:
-    str_app.markdown(eski_rapor)
+for mesaj in str_app.session_state.analiz_gecmisi:
+    with str_app.chat_message(mesaj["role"]):
+        str_app.markdown(mesaj["content"])
 
 # --- WHATSAPP PAYLAŞIM ALANI ---
 if len(str_app.session_state.analiz_gecmisi) > 0:
-    son_rapor = str_app.session_state.analiz_gecmisi[-1]
+    son_rapor = str_app.session_state.analiz_gecmisi[-1]["content"]
     kodlanmis_metin = urllib.parse.quote(son_rapor[:800])
     whatsapp_linki = f"https://whatsapp.com{kodlanmis_metin}"
     
@@ -70,9 +82,16 @@ if len(str_app.session_state.analiz_gecmisi) > 0:
     if str_app.button("Metni Kopyalamak İçin Göster"):
         str_app.text_area("Seçip kopyalayabilirsiniz:", son_rapor, height=200)
 
-# --- SADECE SOHBET ALANI ---
+# --- ANLIK SOHBET ALANI ---
 if kullanici_yazili := str_app.chat_input("Yazın veya soru sorun..."):
+    str_app.session_state.analiz_gecmisi.append({"role": "user", "content": kullanici_yazili})
     with str_app.chat_message("user"):
         str_app.markdown(kullanici_yazili)
+        
+    with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
+        sohbet_komutu = f"Sen profesyonel bir finans asistanısın. Şu soruyu tamamen Türkçe ve detaylıca cevapla:\n\nSoru: {kullanici_yazili}"
+        cevap = gemini_ile_konus(sohbet_komutu)
+        
     with str_app.chat_message("assistant"):
-        str_app.markdown(f"Sistem stabilizasyonu için yapay zeka modelleri kapatılmıştır. Ancak yukarıdaki **Haber İstihbarat Motoru** canlı siteleri okumaya devam etmektedir.")
+        str_app.markdown(cevap)
+    str_app.session_state.messages.append({"role": "assistant", "content": cevap})
