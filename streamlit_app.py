@@ -49,8 +49,8 @@ if link_analiz_butonu and link_girdisi:
                 pass
 
     with str_app.spinner("Google Gemini verileri ve görevleri analiz ediyor..."):
-        # Eski ve yeni kütüphane çakışmalarını önlemek için kesin model yolu yazıldı
-        model_analiz = genai.GenerativeModel('models/gemini-1.5-flash')
+        # Eski kütüphanelerin tanıdığı temel model ismi kullanıldı
+        model_analiz = genai.GenerativeModel('gemini-pro')
         
         komut = (
             f"Sen bir yapay zeka finans ajanısın. Sana verilen internet verilerini kullanarak şu görevi yerine getir:\n"
@@ -61,39 +61,33 @@ if link_analiz_butonu and link_girdisi:
         response = model_analiz.generate_content(komut)
         str_app.session_state.messages.append({"role": "assistant", "content": response.text})
 
-# --- GEÇMİŞ MESAJLARI EKRANA BASMA (Kaymaları Önleyen Doğru Yer) ---
+# --- GEÇMİŞ MESAJLARI EKRANA BASMA ---
 for message in str_app.session_state.messages:
     with str_app.chat_message(message["role"]): 
         str_app.markdown(message["content"])
 
 # --- ANLIK SOHBET GİRİŞİ VE MOTORU ---
 if kullanici_yazili := str_app.chat_input("Mesajınızı buraya yazın..."):
-    # 1. Kullanıcı mesajını kaydet ve anında ekrana bas
     str_app.session_state.messages.append({"role": "user", "content": kullanici_yazili})
     with str_app.chat_message("user"): 
         str_app.markdown(kullanici_yazili)
         
-    # 2. Yapay zekadan yanıt üret
     with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
         try:
-            model_chat = genai.GenerativeModel(
-                model_name='models/gemini-1.5-flash',
-                system_instruction="Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe ve detaylı analizlerle cevapla."
-            )
-            response_chat = model_chat.generate_content(kullanici_yazili)
+            # Eski sürüm uyumluluğu için model ismi 'gemini-pro' yapıldı ve system_instruction kaldırıldı
+            model_chat = genai.GenerativeModel(model_name='gemini-pro')
+            response_chat = model_chat.generate_content("Sistem Talimatı: Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe cevapla.\n\nKullanıcı Sorusu: " + kullanici_yazili)
             cevap = response_chat.text
             
-            # 3. Asistan yanıtını ekrana bas ve hafızaya al
             with str_app.chat_message("assistant"): 
                 str_app.markdown(cevap)
             str_app.session_state.messages.append({"role": "assistant", "content": cevap})
             
-            # 4. Sayfa düzenini korumak için arayüzü tetikle
             str_app.rerun()
         except Exception as e:
             str_app.error(f"Bir hata oluştu: {str(e)}")
 
-# --- WHATSAPP VE PAYLAŞIM ALANI (Sayfa Sonu) ---
+# --- WHATSAPP VE PAYLAŞIM ALANI ---
 if len(str_app.session_state.messages) > 0:
     son_analiz_metni = str_app.session_state.messages[-1]["content"]
     kodlanmis_metin = urllib.parse.quote(son_analiz_metni[:800])
