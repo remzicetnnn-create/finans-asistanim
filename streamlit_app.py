@@ -1,5 +1,4 @@
 import os
-import io
 import urllib.parse
 import datetime
 import requests
@@ -87,54 +86,25 @@ if len(str_app.session_state.messages) > 0:
     if str_app.button("Metni Kopyalamak İçin Göster"):
         str_app.text_area("Seçip kopyalayabilirsiniz:", son_analiz_metni, height=200)
 
-# --- ANLIK SESLİ SOHBET MOTORU (ÜCRETSİZ KATMAN EN EMİN MODEL) ---
-ses_verisi = str_app.audio_input("Sesli soru sormak için dokunun:")
-if ses_verisi is not None:
-    from groq import Groq
-    client = Groq(api_key=GROQ_API_KEY)
-    with str_app.spinner("Ses çözülüyor..."):
-        transcription = client.audio.transcriptions.create(file=("konusma.wav", ses_verisi.read()), model="whisper-large-v3", language="tr")
-        kullanici_sorusu = transcription.text
-    str_app.session_state.messages.append({"role": "user", "content": kullanici_sorusu})
-    with str_app.chat_message("user"): str_app.markdown(kullanici_sorusu)
-    
-    soru_vektoru = embeddings.embed_query(kullanici_sorusu)
-    arama_sonucu = index.query(vector=soru_vektoru, top_k=2, include_metadata=True)
-    kaynak_metinler = ""
-    for match in arama_sonucu['matches']:
-        if 'metadata' in match and 'text' in match['metadata']: kaynak_metinler += match['metadata']['text'] + "\n"
-        
-    with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
-        # Kesintisiz bağlantı için en kararlı temel Llama 3 modeline geçtik
-        llm_chat = langchain_groq.ChatGroq(temperature=0.4, groq_api_key=GROQ_API_KEY, model_name="llama3-8b-8192")
-        komut = f"Kaynak verilere göre soruyu Türkçe cevapla:\nKaynak:\n{kaynak_metinler}\nSoru: {kullanici_sorusu}"
-        cevap = llm_chat.invoke(komut).content
-        
-    from gtts import gTTS
-    with str_app.spinner("Seslendiriliyor..."):
-        tts = gTTS(text=cevap, lang='tr')
-        ses_dosyasi = io.BytesIO()
-        tts.write_to_fp(ses_dosyasi)
-        ses_bytes = ses_dosyasi.getvalue()
-        
-    with str_app.chat_message("assistant"):
-        str_app.markdown(cevap)
-        str_app.audio(ses_bytes)
-    str_app.session_state.messages.append({"role": "assistant", "content": cevap, "audio": ses_bytes})
-
-# --- ANLIK YAZILI SOHBET MOTORU (ÜCRETSİZ KATMAN EN EMİN MODEL) ---
-if kullanici_yazili := str_app.chat_input("Veya buraya yazın..."):
+# --- ANLIK YAZILI SOHBET MOTORU (ÜCRETSİZ EN ÜST SEVİYE DEV MODEL) ---
+if kullanici_yazili := str_app.chat_input("Mesajınızı buraya yazın..."):
     str_app.session_state.messages.append({"role": "user", "content": kullanici_yazili})
-    with str_app.chat_message("user"): str_app.markdown(kullanici_yazili)
+    with str_app.chat_message("user"): 
+        str_app.markdown(kullanici_yazili)
+        
     soru_vektoru = embeddings.embed_query(kullanici_yazili)
     arama_sonucu = index.query(vector=soru_vektoru, top_k=2, include_metadata=True)
     kaynak_metinler = ""
     for match in arama_sonucu['matches']:
-        if 'metadata' in match and 'text' in match['metadata']: kaynak_metinler += match['metadata']['text'] + "\n"
+        if 'metadata' in match and 'text' in match['metadata']: 
+            kaynak_metinler += match['metadata']['text'] + "\n"
         
-    # Kesintisiz bağlantı için en kararlı temel Llama 3 modeline geçtik
-    llm_chat = langchain_groq.ChatGroq(temperature=0.4, groq_api_key=GROQ_API_KEY, model_name="llama3-8b-8192")
-    komut = f"Kaynak verilere göre soruyu Türkçe cevapla:\nKaynak:\n{kaynak_metinler}\nSoru: {kullanici_yazili}"
-    cevap = llm_chat.invoke(komut).content
-    with str_app.chat_message("assistant"): str_app.markdown(cevap)
+    with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
+        # Ses karmaşası kalktığı için artık ücretsiz katmanda kilitlenmeyen en zeki modeli tanımlayabiliyoruz
+        llm_chat = langchain_groq.ChatGroq(temperature=0.4, groq_api_key=GROQ_API_KEY, model_name="llama-3.3-70b-specdec")
+        komut = f"Kaynak verilere veya genel bilgine göre soruyu Türkçe detaylıca cevapla:\nKaynak:\n{kaynak_metinler}\nSoru: {kullanici_yazili}"
+        cevap = llm_chat.invoke(komut).content
+        
+    with str_app.chat_message("assistant"): 
+        str_app.markdown(cevap)
     str_app.session_state.messages.append({"role": "assistant", "content": cevap})
