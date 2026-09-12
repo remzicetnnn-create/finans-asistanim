@@ -50,9 +50,9 @@ if link_analiz_butonu and link_girdisi:
         llm = langchain_groq.ChatGroq(temperature=0.1, groq_api_key=GROQ_API_KEY, model_name="deepseek-r1-distill-llama-70b")
         
         komut = (
-            f"Sen bir yapay zeka finans ajanısın. Sana verilen internet verilerini kullanarak şu görevi yerine getir:\n"
-            f"GÖREV: {takip_varligi} varlığı için son {gun_sayisi} günlük hareketleri çıkar. Eğer son gün {alarm_limiti} Milyon dolardan fazla önemli bir para girişi saptarsan raporda acil durum uyarısı belirt. Sonuçları Türkçe günlük liste raporu olarak yaz.\n\n"
-            f"İnternet Verileri:\n{toplam_metin}"
+            f"You are an AI financial agent. Analyze the following web texts.\n"
+            f"TASK: Extract movements for {takip_varligi} for the last {gun_sayisi} days. If there is a significant cash inflow of more than {alarm_limiti} Million dollars on the last day, state an emergency alert in the report. Write the results as a chronological DAILY LIST summary report in TURKISH language.\n\n"
+            f"Web Data:\n{toplam_metin}"
         )
         
         rapor_sonucu = llm.invoke(komut).content
@@ -77,18 +77,19 @@ if len(str_app.session_state.messages) > 0:
     if str_app.button("Metni Kopyalamak İçin Göster"):
         str_app.text_area("Seçip kopyalayabilirsiniz:", son_analiz_metni, height=200)
 
-# --- ANLIK YAZILI SOHBET MOTORU (HATA VERMEYEN EN KARARLI SÜRÜM) ---
+# --- ANLIK YAZILI SOHBET MOTORU (SABİT VE ULUSLARARASI ŞABLON) ---
 if kullanici_yazili := str_app.chat_input("Mesajınızı buraya yazın..."):
     str_app.session_state.messages.append({"role": "user", "content": kullanici_yazili})
     with str_app.chat_message("user"): 
         str_app.markdown(kullanici_yazili)
         
     with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
-        # Sohbet alanındaki kilitlenmeyi aşmak için en kararlı modele geçiş yaptık
         llm_chat = langchain_groq.ChatGroq(temperature=0.4, groq_api_key=GROQ_API_KEY, model_name="llama3-8b-8192")
-        komut = f"Genel finans bilgine dayanarak şu soruyu Türkçe detaylıca cevapla:\n\nSoru: {kullanici_yazili}"
+        # Komut yapısını Groq'un reddedemeyeceği evrensel şablona çevirdik
+        komut = f"Answer the following question thoroughly in TURKISH language based on your general finance knowledge:\n\nQuestion: {kullanici_yazili}"
         cevap = llm_chat.invoke(komut).content
         
     with str_app.chat_message("assistant"): 
         str_app.markdown(cevap)
     str_app.session_state.messages.append({"role": "assistant", "content": cevap})
+    
