@@ -11,11 +11,13 @@ str_app.write("7/24 Açık Bulut Tabanlı Kesintisiz Finans Terminaliniz.")
 if "analiz_gecmisi" not in str_app.session_state:
     str_app.session_state.analiz_gecmisi = []
 
-# --- GOOGLE REZERV MOTORU (ŞİFRE ÇAKIŞMASI TAMAMEN DÜZELTİLDİ) ---
+# --- ADRES BİRLEŞTİRME HATASI TAMAMEN DÜZELTİLEN MOTOR ---
 def yapay_zeka_ile_konus(komut_metni):
-    # Doğrudan sizin kasaya eklediğiniz orijinal uzun şifreyi (AQ.Ab8RN...) çekiyoruz
     o_key = os.environ.get("GEMINI_API_KEY")
-    url = f"https://googleapis.com{o_key}"
+    
+    # İnternet adresi ve şifre parametresi kesin olarak birbirinden ayrıldı
+    url = "https://googleapis.com"
+    parametreler = {"key": o_key}
     
     headers = {"Content-Type": "application/json"}
     data = {
@@ -27,12 +29,12 @@ def yapay_zeka_ile_konus(komut_metni):
     }
     
     try:
-        response = requests.post(url, json=data, headers=headers, timeout=20)
+        # Şifre sisteme harici bir parametre olarak güvenle bağlanıyor
+        response = requests.post(url, params=parametreler, json=data, headers=headers, timeout=20)
         yanit_json = response.json()
         return yanit_json["candidates"]["content"]["parts"]["text"]
     except Exception as e:
-        # Hata durumunda gerçek teknik nedeni ekrana basıyoruz ki körü körüne tahmin etmeyelim
-        return f"⚠️ Google Sunucu Yanıtı: {str(e)}"
+        return f"⚠️ Google Sunucu Hatası: {str(e)}"
 
 # --- YAN PANEL AYARLARI ---
 with str_app.sidebar:
@@ -48,7 +50,7 @@ with str_app.sidebar:
 # --- LİNK OKUMA VE ANALİZ MOTORU ---
 if link_analiz_butonu and link_girdisi:
     linkler = [l.strip() for l in link_girdisi.split("\n") if l.strip()]
-    toplam_web_metni = ""
+    topham_web_metni = ""
     
     with str_app.spinner("Kaynak siteler taranıyor..."):
         for link in linkler:
@@ -58,14 +60,14 @@ if link_analiz_butonu and link_girdisi:
                 soup = BeautifulSoup(res.text, 'html.parser')
                 for s in soup(['script', 'style', 'nav', 'footer']): s.decompose()
                 temiz_yazi = " ".join(soup.get_text().split())
-                toplam_web_metni += f"\n[SOURCE: {link}]\n" + temiz_yazi[:2500]
+                topham_web_metni += f"\n[SOURCE: {link}]\n" + temiz_yazi[:2500]
             except: pass
                 
     with str_app.spinner("Yapay zeka verileri analiz ediyor..."):
         yapay_zeka_komutu = (
             f"Analyze the following financial data chronologically. Filter developments regarding {takip_varligi} "
             f"for the last {gun_sayisi} days. Summarize results as a daily list report in Turkish."
-            f"\n\nData:\n{toplam_web_metni}"
+            f"\n\nData:\n{topham_web_metni}"
         )
         rapor_sonucu = yapay_zeka_ile_konus(yapay_zeka_komutu)
         str_app.session_state.analiz_gecmisi.append({"role": "assistant", "content": rapor_sonucu})
