@@ -9,7 +9,7 @@ import langchain_groq
 from pinecone import Pinecone
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-# Gizli kasadan şifre çekme
+# Şifreleri gizli kasadan çekme
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 PINECONE_API_KEY = os.environ.get("PINECONE_API_KEY")
 
@@ -19,56 +19,51 @@ pc = Pinecone(api_key=PINECONE_API_KEY)
 index = pc.Index("yapay-zeka-hafizam")
 
 str_app.title("🎙️ Süper Finans Asistanı V2")
-str_app.write("7/24 Açık Bulut Tabanlı Finans Asistanınız.")
+str_app.write("7/24 Açık Bulut Tabanlı Dinamik Finans Terminaliniz.")
 
 if "messages" not in str_app.session_state:
     str_app.session_state.messages = []
 
-# YAN PANEL AYARLARI
+# --- YAN PANEL: DİNAMİK GÖREV YÖNETİMİ ---
 with str_app.sidebar:
-    str_app.header("📰 Web Link İstihbaratı")
-    link_girdisi = str_app.text_area("Taranacak Web Linkleri (Her satıra bir adet):", value="https://coindesk.com")
+    str_app.header("📰 Dinamik Görev Ayarları")
     
-    str_app.subheader("📅 Tarih Aralığı")
-    bugun = datetime.date.today()
-    uc_gun_once = bugun - datetime.timedelta(days=3)
-    tarih_secimi = str_app.date_input("Analiz Tarih Aralığı:", [uc_gun_once, bugun])
+    # Koda girmeden chat ekranı gibi görev yönetimi sağlayan alanlar
+    takip_varligi = str_app.text_input("🎯 Takip Edilecek Varlık / ETF:", value="VOO ETF")
+    gun_sayisi = str_app.slider("📅 Kaç Günlük Veri İncelensin?:", min_value=1, max_value=30, value=15)
+    alarm_limiti = str_app.number_input("🚨 Para Girişi Alarm Limiti (Milyon $):", min_value=1, value=500)
     
-    link_analiz_butonu = str_app.button("Linkleri Günlük Liste Olarak Analiz Et")
+    str_app.markdown("---")
+    str_app.subheader("🔗 Web Link İstihbaratı")
+    link_girdisi = str_app.text_area("Taranacak Web Linkleri:", value="https://coindesk.com")
+    
+    link_analiz_butonu = str_app.button("Görevleri Başlat ve Linkleri Analiz Et")
 
-# LİNK ANALİZ MOTORU
+# LİNK VE DİNAMİK GÖREV ANALİZ MOTORU
 if link_analiz_butonu and link_girdisi:
     linkler = [l.strip() for l in link_girdisi.split("\n") if l.strip()]
     toplam_metin = ""
     
-    with str_app.spinner("Linkler okunuyor..."):
+    with str_app.spinner("Verilen kaynak siteler taranıyor..."):
         for link in linkler:
             try:
                 headers = {'User-Agent': 'Mozilla/5.0'}
                 res = requests.get(link, headers=headers, timeout=10)
                 soup = BeautifulSoup(res.text, 'html.parser')
-                for s in soup(['script', 'style']): 
-                    s.decompose()
-                # Metni temizle ve çok uzun olmasını engelle
+                for s in soup(['script', 'style']): s.decompose()
                 temiz_yazi = " ".join(soup.get_text().split())
                 toplam_metin += f"\n[KAYNAK: {link}]\n" + temiz_yazi[:2500]
             except: 
                 pass
 
-    with str_app.spinner("DeepSeek-R1 Analiz Ediyor..."):
-        # Model yapısını en uyumlu sürümle güncelliyoruz
-        llm = langchain_groq.ChatGroq(
-            temperature=0.1, 
-            groq_api_key=GROQ_API_KEY, 
-            model_name="deepseek-r1-distill-llama-70b"
-        )
+    with str_app.spinner("DeepSeek-R1 Görevleri Değerlendiriyor..."):
+        # Ağır analizler için en güçlü DeepSeek modelini kullanıyoruz
+        llm = langchain_groq.ChatGroq(temperature=0.1, groq_api_key=GROQ_API_KEY, model_name="deepseek-r1-distill-llama-70b")
         
-        # DeepSeek için en optimize komut şablonu
         komut = (
-            f"Aşağıdaki web içeriklerini kronolojik olarak incele. "
-            f"Sadece belirtilen tarih aralığındaki haberleri filtrele ve Türkçe günlük liste özeti çıkar.\n"
-            f"Tarih Aralığı: {str(tarih_secimi)}\n\n"
-            f"İçerik:\n{toplam_metin}"
+            f"Sen bir yapay zeka finans ajanısın. Sana verilen internet verilerini kullanarak şu görevi yerine getir:\n"
+            f"GÖREV: {takip_varligi} varlığı için son {gun_sayisi} günlük hareketleri çıkar. Eğer son gün {alarm_limiti} Milyon dolardan fazla önemli bir para girişi saptarsan raporda acil durum uyarısı belirt. Sonuçları Türkçe günlük liste raporu olarak yaz.\n\n"
+            f"İnternet Verileri:\n{toplam_metin}"
         )
         
         rapor_sonucu = llm.invoke(komut).content
@@ -76,12 +71,12 @@ if link_analiz_butonu and link_girdisi:
             rapor_sonucu = rapor_sonucu.split("</thought>")[-1].strip()
         str_app.session_state.messages.append({"role": "assistant", "content": rapor_sonucu})
 
-# GEÇMİŞİ EKRANA BASMA
+# GEÇMİŞ MESAJLARI BASMA
 for message in str_app.session_state.messages:
     with str_app.chat_message(message["role"]): 
         str_app.markdown(message["content"])
 
-# PAYLAŞIM VE WHATSAPP
+# WHATSAPP PAYLAŞIM ALANI
 if len(str_app.session_state.messages) > 0:
     son_analiz_metni = str_app.session_state.messages[-1]["content"]
     kodlanmis_metin = urllib.parse.quote(son_analiz_metni[:800])
@@ -93,7 +88,7 @@ if len(str_app.session_state.messages) > 0:
     if str_app.button("Metni Kopyalamak İçin Göster"):
         str_app.text_area("Seçip kopyalayabilirsiniz:", son_analiz_metni, height=200)
 
-# SES GİRİŞİ
+# SES GİRİŞİ (Anlık Mesajlaşma İçin En Kararlı Model Seçildi)
 ses_verisi = str_app.audio_input("Sesli soru sormak için dokunun:")
 if ses_verisi is not None:
     from groq import Groq
@@ -102,22 +97,19 @@ if ses_verisi is not None:
         transcription = client.audio.transcriptions.create(file=("konusma.wav", ses_verisi.read()), model="whisper-large-v3", language="tr")
         kullanici_sorusu = transcription.text
     str_app.session_state.messages.append({"role": "user", "content": kullanici_sorusu})
-    with str_app.chat_message("user"): 
-        str_app.markdown(kullanici_sorusu)
+    with str_app.chat_message("user"): str_app.markdown(kullanici_sorusu)
     
     soru_vektoru = embeddings.embed_query(kullanici_sorusu)
     arama_sonucu = index.query(vector=soru_vektoru, top_k=2, include_metadata=True)
     kaynak_metinler = ""
     for match in arama_sonucu['matches']:
-        if 'metadata' in match and 'text' in match['metadata']: 
-            kaynak_metinler += match['metadata']['text'] + "\n"
+        if 'metadata' in match and 'text' in match['metadata']: kaynak_metinler += match['metadata']['text'] + "\n"
         
-    with str_app.spinner("DeepSeek-R1 Düşünüyor..."):
-        llm = langchain_groq.ChatGroq(temperature=0.1, groq_api_key=GROQ_API_KEY, model_name="deepseek-r1-distill-llama-70b")
+    with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
+        # Sohbet akıcılığı için ücretsiz katmanda hata vermeyen en kararlı model entegre edildi
+        llm_chat = langchain_groq.ChatGroq(temperature=0.4, groq_api_key=GROQ_API_KEY, model_name="llama-3.1-8b-instant")
         komut = f"Kaynak verilere göre soruyu Türkçe cevapla:\nKaynak:\n{kaynak_metinler}\nSoru: {kullanici_sorusu}"
-        cevap = llm.invoke(komut).content
-        if "</thought>" in cevap: 
-            cevap = cevap.split("</thought>")[-1].strip()
+        cevap = llm_chat.invoke(komut).content
         
     from gtts import gTTS
     with str_app.spinner("Seslendiriliyor..."):
@@ -131,24 +123,18 @@ if ses_verisi is not None:
         str_app.audio(ses_bytes)
     str_app.session_state.messages.append({"role": "assistant", "content": cevap, "audio": ses_bytes})
 
-# METİN GİRİŞİ
+# METİN GİRİŞİ (Anlık Mesajlaşma İçin En Kararlı Model Seçildi)
 if kullanici_yazili := str_app.chat_input("Veya buraya yazın..."):
     str_app.session_state.messages.append({"role": "user", "content": kullanici_yazili})
-    with str_app.chat_message("user"): 
-        str_app.markdown(kullanici_yazili)
+    with str_app.chat_message("user"): str_app.markdown(kullanici_yazili)
     soru_vektoru = embeddings.embed_query(kullanici_yazili)
     arama_sonucu = index.query(vector=soru_vektoru, top_k=2, include_metadata=True)
     kaynak_metinler = ""
     for match in arama_sonucu['matches']:
-        if 'metadata' in match and 'text' in match['metadata']: 
-            kaynak_metinler += match['metadata']['text'] + "\n"
+        if 'metadata' in match and 'text' in match['metadata']: kaynak_metinler += match['metadata']['text'] + "\n"
         
-    llm = langchain_groq.ChatGroq(temperature=0.1, groq_api_key=GROQ_API_KEY, model_name="deepseek-r1-distill-llama-70b")
+    llm_chat = langchain_groq.ChatGroq(temperature=0.4, groq_api_key=GROQ_API_KEY, model_name="llama-3.1-8b-instant")
     komut = f"Kaynak verilere göre soruyu Türkçe cevapla:\nKaynak:\n{kaynak_metinler}\nSoru: {kullanici_yazili}"
-    cevap = llm.invoke(komut).content
-    if "</thought>" in cevap: 
-        cevap = cevap.split("</thought>")[-1].strip()
-    with str_app.chat_message("assistant"): 
-        str_app.markdown(cevap)
+    cevap = llm_chat.invoke(komut).content
+    with str_app.chat_message("assistant"): str_app.markdown(cevap)
     str_app.session_state.messages.append({"role": "assistant", "content": cevap})
-        
