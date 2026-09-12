@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 import streamlit as str_app
 
-# Google Gemini API bağlantısını en saf ve hatasız ham HTTP yöntemiyle kuruyoruz
+# Google Gemini API anahtarını kasadan çekiyoruz
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 str_app.title("📊 Süper Finans Haber İstasyonu V4")
@@ -27,18 +27,19 @@ with str_app.sidebar:
     
     link_analiz_butonu = str_app.button("Linkleri Günlük Liste Olarak Tara ve Analiz Et")
 
-# --- GEMINI HAM İSTEK FONKSİYONU (KİLİTLENME İHTİMALİ SIFIRDIR) ---
+# --- GEMINI SAF API BAĞLANTI FONKSİYONU ---
 def gemini_ile_konus(komut_metni):
     url = f"https://googleapis.com{GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     data = {"contents": [{"parts": [{"text": komut_metni}]}]}
     try:
         response = requests.post(url, json=data, headers=headers, timeout=15)
-        return response.json()["candidates"][0]["content"]["parts"][0]["text"]
+        yanit_json = response.json()
+        return yanit_json["candidates"][0]["content"]["parts"][0]["text"]
     except:
-        return "⚠️ Yapay zeka sunucusuna anlık olarak ulaşılamadı, lütfen tekrar deneyin."
+        return "⚠️ Yapay zeka motoru yanıt üretemedi, lütfen tekrar deneyin."
 
-# --- LİNK OKUMA VE GEMINI ANALİZ MOTORU ---
+# --- LİNK OKUMA VE ANALİZ MOTORU ---
 if link_analiz_butonu and link_girdisi:
     linkler = [l.strip() for l in link_girdisi.split("\n") if l.strip()]
     toplam_web_metni = ""
@@ -55,7 +56,7 @@ if link_analiz_butonu and link_girdisi:
             except:
                 pass
                 
-    with str_app.spinner("Gemini Linkleri ve Tarihleri Analiz Ediyor..."):
+    with str_app.spinner("Gemini verileri analiz ediyor..."):
         yapay_zeka_komutu = (
             f"Sen profesyonel bir finans analiz ajanısın. Aşağıdaki verileri kronolojik olarak incele. "
             f"Sadece {takip_varligi} ile ilgili son {gun_sayisi} günlük gelişmeleri filtrele, "
@@ -82,16 +83,16 @@ if len(str_app.session_state.analiz_gecmisi) > 0:
     if str_app.button("Metni Kopyalamak İçin Göster"):
         str_app.text_area("Seçip kopyalayabilirsiniz:", son_rapor, height=200)
 
-# --- ANLIK SOHBET ALANI ---
+# --- ANLIK YAZILI SOHBET ALANI ---
 if kullanici_yazili := str_app.chat_input("Yazın veya soru sorun..."):
     str_app.session_state.analiz_gecmisi.append({"role": "user", "content": kullanici_yazili})
     with str_app.chat_message("user"):
         str_app.markdown(kullanici_yazili)
         
     with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
-        sohbet_komutu = f"Sen profesyonel bir finans asistanısın. Şu soruyu tamamen Türkçe ve detaylıca cevapla:\n\nSoru: {kullanici_yazili}"
+        sohbet_komutu = f"Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe ve detaylı analizlerle cevapla. Soru: {kullanici_yazili}"
         cevap = gemini_ile_konus(sohbet_komutu)
         
     with str_app.chat_message("assistant"):
         str_app.markdown(cevap)
-    str_app.session_state.messages.append({"role": "assistant", "content": cevap})
+    str_app.session_state.analiz_gecmisi.append({"role": "assistant", "content": cevap})
