@@ -1,8 +1,4 @@
 streamlit
-langchain-groq
-pinecone
-langchain-community
-sentence-transformers
+google-generativeai
 beautifulsoup4
 requests
-gTTS
