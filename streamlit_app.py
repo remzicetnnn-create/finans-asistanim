@@ -77,14 +77,15 @@ if len(str_app.session_state.messages) > 0:
     if str_app.button("Metni Kopyalamak İçin Göster"):
         str_app.text_area("Seçip kopyalayabilirsiniz:", son_analiz_metni, height=200)
 
-# --- ANLIK YAZILI SOHBET MOTORU (EN ÜST SEVİYE VE HATASIZ SÜRÜM) ---
+# --- ANLIK YAZILI SOHBET MOTORU (HATA VERMEYEN EN KARARLI SÜRÜM) ---
 if kullanici_yazili := str_app.chat_input("Mesajınızı buraya yazın..."):
     str_app.session_state.messages.append({"role": "user", "content": kullanici_yazili})
     with str_app.chat_message("user"): 
         str_app.markdown(kullanici_yazili)
         
     with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
-        llm_chat = langchain_groq.ChatGroq(temperature=0.4, groq_api_key=GROQ_API_KEY, model_name="llama-3.3-70b-specdec")
+        # Sohbet alanındaki kilitlenmeyi aşmak için en kararlı modele geçiş yaptık
+        llm_chat = langchain_groq.ChatGroq(temperature=0.4, groq_api_key=GROQ_API_KEY, model_name="llama3-8b-8192")
         komut = f"Genel finans bilgine dayanarak şu soruyu Türkçe detaylıca cevapla:\n\nSoru: {kullanici_yazili}"
         cevap = llm_chat.invoke(komut).content
         
