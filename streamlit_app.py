@@ -1,12 +1,10 @@
 import os
-import io
 import urllib.parse
 import datetime
 import requests
 from bs4 import BeautifulSoup
 import streamlit as str_app
 import google.generativeai as genai
-import time
 
 # Google Gemini API anahtarını kasadan çekip resmi olarak tanıtıyoruz
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -15,6 +13,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 str_app.title("📊 Süper Finans Haber İstasyonu V4")
 str_app.write("7/24 Açık Bulut Tabanlı Kesintisiz Finans Terminaliniz.")
 
+# Hafızayı dondurma ve koruma altına alma alanı
 if "analiz_gecmisi" not in str_app.session_state:
     str_app.session_state.analiz_gecmisi = []
 
@@ -31,20 +30,15 @@ with str_app.sidebar:
     
     link_analiz_butonu = str_app.button("Linkleri Günlük Liste Olarak Tara ve Analiz Et")
 
-# --- RESMİ VE GÜVENLİ GEMINI BAĞLANTI MOTORU ---
-def gemini_ile_konus(komut_metni):
-    # Google'ın ücretsiz katmandaki bot filtresine takılmamak için milisaniyelik güvenlik beklemesi ekliyoruz
-    time.sleep(0.5)
-    try:
-        model = genai.GenerativeModel(
-            'gemini-1.5-flash',
-            system_instruction="Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe ve detaylı analizlerle cevapla."
-        )
-        response = model.generate_content(komut_metni)
-        return response.text
-    except Exception as e:
-        # Eğer sunucu yine de çok anlık kilitlenirse sistemi çökertme, kararlı modu koru
-        return "⚠️ Google sunucuları anlık kota sınırı uyguladı, lütfen 2 saniye sonra mesajınızı tekrar göndermeyi deneyin."
+# --- YAPAY ZEKA BAĞLANTISINI SABİTLEME (SONSUZ DÖNGÜYÜ ENGELLER) ---
+@str_app.cache_resource
+def yapay_zeka_motorunu_baslat():
+    return genai.GenerativeModel(
+        'gemini-1.5-flash',
+        system_instruction="Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe ve detaylı analizlerle cevapla."
+    )
+
+model = yapay_zeka_motorunu_baslat()
 
 # --- LİNK OKUMA VE ANALİZ MOTORU ---
 if link_analiz_butonu and link_girdisi:
@@ -70,10 +64,10 @@ if link_analiz_butonu and link_girdisi:
             f"sonuçları Türkçe kronolojik GÜNLÜK LİSTE raporu olarak özetle."
             f"\n\nVeriler:\n{toplam_web_metni}"
         )
-        rapor_sonucu = gemini_ile_konus(yapay_zeka_komutu)
-        str_app.session_state.analiz_gecmisi.append({"role": "assistant", "content": rapor_sonucu})
+        response = model.generate_content(yapay_zeka_komutu)
+        str_app.session_state.analiz_gecmisi.append({"role": "assistant", "content": response.text})
 
-# GEÇMİŞİ EKRANA BASMA
+# GEÇMİŞİ EKRANA SADECE BİR KEZ BASMA
 for mesaj in str_app.session_state.analiz_gecmisi:
     with str_app.chat_message(mesaj["role"]):
         str_app.markdown(mesaj["content"])
@@ -87,8 +81,6 @@ if len(str_app.session_state.analiz_gecmisi) > 0:
     str_app.markdown("---")
     str_app.subheader("📢 Raporu Paylaş")
     str_app.sidebar.markdown(f' <a href="{whatsapp_linki}" target="_blank"><button style="background-color:#25D366;color:white;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;width:100%;">🟢 WhatsApp ile Paylaş</button></a>', unsafe_allow_html=True)
-    if str_app.button("Metni Kopyalamak İçin Göster"):
-        str_app.text_area("Seçip kopyalayabilirsiniz:", son_rapor, height=200)
 
 # --- ANLIK YAZILI SOHBET ALANI ---
 if kullanici_yazili := str_app.chat_input("Yazın veya soru sorun..."):
@@ -97,7 +89,11 @@ if kullanici_yazili := str_app.chat_input("Yazın veya soru sorun..."):
         str_app.markdown(kullanici_yazili)
         
     with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
-        cevap = gemini_ile_konus(kullanici_yazili)
+        try:
+            response_chat = model.generate_content(kullanici_yazili)
+            cevap = response_chat.text
+        except:
+            cevap = "⚠️ Google API kotası şu an dinlendiriliyor. Lütfen 30 saniye sonra tekrar yazmayı deneyin."
         
     with str_app.chat_message("assistant"):
         str_app.markdown(cevap)
