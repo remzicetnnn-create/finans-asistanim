@@ -40,7 +40,7 @@ if kullanici_sorusu := str_app.chat_input("Mesajınızı yazın..."):
             kaynak_metinler += match['metadata']['text'] + "\n"
 
     # Yapay zekadan yanıt alma
-    llm = langchain_groq.ChatGroq(temperature=0.3, groq_api_key=GROQ_API_KEY, model_name="llama-3.1-8b-instant")
+    llm = langchain_groq.ChatGroq(temperature=0.3, groq_api_key=GROQ_API_KEY, model_name="llama-3.3-70b-specdec" )
     komut = f"Eğer kaynakta bilgi varsa ona göre, yoksa kendi genel finans bilgine dayanarak soruyu Türkçe cevapla.\n\nKaynak:\n{kaynak_metinler}\n\nSoru: {kullanici_sorusu}"
     
     cevap = llm.invoke(komut)
