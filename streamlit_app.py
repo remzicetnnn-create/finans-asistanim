@@ -87,7 +87,7 @@ if len(str_app.session_state.messages) > 0:
     if str_app.button("Metni Kopyalamak İçin Göster"):
         str_app.text_area("Seçip kopyalayabilirsiniz:", son_analiz_metni, height=200)
 
-# --- ANLIK SESLİ SOHBET MOTORU (IŞIK HIZINDA EN STABİL MODEL) ---
+# --- ANLIK SESLİ SOHBET MOTORU (ÜCRETSİZ KATMAN EN EMİN MODEL) ---
 ses_verisi = str_app.audio_input("Sesli soru sormak için dokunun:")
 if ses_verisi is not None:
     from groq import Groq
@@ -105,8 +105,8 @@ if ses_verisi is not None:
         if 'metadata' in match and 'text' in match['metadata']: kaynak_metinler += match['metadata']['text'] + "\n"
         
     with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
-        # Hızlı sohbet ve kesintisiz bağlantı için en uyumlu modele geçtik
-        llm_chat = langchain_groq.ChatGroq(temperature=0.4, groq_api_key=GROQ_API_KEY, model_name="llama-3.1-8b-instant")
+        # Kesintisiz bağlantı için en kararlı temel Llama 3 modeline geçtik
+        llm_chat = langchain_groq.ChatGroq(temperature=0.4, groq_api_key=GROQ_API_KEY, model_name="llama3-8b-8192")
         komut = f"Kaynak verilere göre soruyu Türkçe cevapla:\nKaynak:\n{kaynak_metinler}\nSoru: {kullanici_sorusu}"
         cevap = llm_chat.invoke(komut).content
         
@@ -122,7 +122,7 @@ if ses_verisi is not None:
         str_app.audio(ses_bytes)
     str_app.session_state.messages.append({"role": "assistant", "content": cevap, "audio": ses_bytes})
 
-# --- ANLIK YAZILI SOHBET MOTORU (IŞIK HIZINDA EN STABİL MODEL) ---
+# --- ANLIK YAZILI SOHBET MOTORU (ÜCRETSİZ KATMAN EN EMİN MODEL) ---
 if kullanici_yazili := str_app.chat_input("Veya buraya yazın..."):
     str_app.session_state.messages.append({"role": "user", "content": kullanici_yazili})
     with str_app.chat_message("user"): str_app.markdown(kullanici_yazili)
@@ -132,8 +132,8 @@ if kullanici_yazili := str_app.chat_input("Veya buraya yazın..."):
     for match in arama_sonucu['matches']:
         if 'metadata' in match and 'text' in match['metadata']: kaynak_metinler += match['metadata']['text'] + "\n"
         
-    # Hızlı sohbet ve kesintisiz bağlantı için en uyumlu modele geçtik
-    llm_chat = langchain_groq.ChatGroq(temperature=0.4, groq_api_key=GROQ_API_KEY, model_name="llama-3.1-8b-instant")
+    # Kesintisiz bağlantı için en kararlı temel Llama 3 modeline geçtik
+    llm_chat = langchain_groq.ChatGroq(temperature=0.4, groq_api_key=GROQ_API_KEY, model_name="llama3-8b-8192")
     komut = f"Kaynak verilere göre soruyu Türkçe cevapla:\nKaynak:\n{kaynak_metinler}\nSoru: {kullanici_yazili}"
     cevap = llm_chat.invoke(komut).content
     with str_app.chat_message("assistant"): str_app.markdown(cevap)
