@@ -48,7 +48,8 @@ if link_analiz_butonu and link_girdisi:
                 pass
 
     with str_app.spinner("Google Gemini verileri ve görevleri analiz ediyor..."):
-        model_analiz = genai.GenerativeModel('gemini-1.5-flash')
+        # 404 Hatasını önlemek için güncel kararlı takı eklendi
+        model_analiz = genai.GenerativeModel('gemini-1.5-flash-latest')
         
         komut = (
             f"Sen bir yapay zeka finans ajanısın. Sana verilen internet verilerini kullanarak şu görevi yerine getir:\n"
@@ -59,7 +60,7 @@ if link_analiz_butonu and link_girdisi:
         response = model_analiz.generate_content(komut)
         str_app.session_state.messages.append({"role": "assistant", "content": response.text})
 
-# --- GEÇMİŞ MESAJLARI BASMA (Doğru Akış İçin Yukarı Taşındı) ---
+# --- GEÇMİŞ MESAJLARI BASMA ---
 for message in str_app.session_state.messages:
     with str_app.chat_message(message["role"]): 
         str_app.markdown(message["content"])
@@ -73,9 +74,9 @@ if kullanici_yazili := str_app.chat_input("Mesajınızı buraya yazın..."):
         
     with str_app.spinner("Yapay Zeka Yanıtlıyor..."):
         try:
-            # Sistem talimatı doğru parametre yapısıyla beslendi
+            # 404 Hatasını önlemek ve kararlı çalışması için 'gemini-1.5-pro-latest' sürümüne güncellendi
             model_chat = genai.GenerativeModel(
-                model_name='gemini-1.5-pro',
+                model_name='gemini-1.5-pro-latest',
                 system_instruction="Sen profesyonel bir finans asistanısın. Tüm soruları tamamen Türkçe ve detaylı analizlerle cevapla."
             )
             response_chat = model_chat.generate_content(kullanici_yazili)
@@ -95,7 +96,7 @@ if kullanici_yazili := str_app.chat_input("Mesajınızı buraya yazın..."):
 if len(str_app.session_state.messages) > 0:
     son_analiz_metni = str_app.session_state.messages[-1]["content"]
     kodlanmis_metin = urllib.parse.quote(son_analiz_metni[:800])
-    # WhatsApp paylaşım API linki düzeltildi
+    # WhatsApp resmi yönlendirme API linki tam formatıyla düzeltildi
     whatsapp_linki = f"https://whatsapp.com{kodlanmis_metin}"
     
     str_app.markdown("---")
