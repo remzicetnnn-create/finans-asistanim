@@ -11,11 +11,12 @@ str_app.write("7/24 Açık Bulut Tabanlı Kesintisiz Finans Terminaliniz.")
 if "analiz_gecmisi" not in str_app.session_state:
     str_app.session_state.analiz_gecmisi = []
 
-# --- ADRES BİRLEŞTİRME HATASI TAMAMEN DÜZELTİLEN MOTOR ---
+# --- ŞIFRE BOŞLUKLARINI TEMIZLEYEN VE DOĞRULAYAN MOTOR ---
 def yapay_zeka_ile_konus(komut_metni):
-    o_key = os.environ.get("GEMINI_API_KEY")
+    raw_key = os.environ.get("GEMINI_API_KEY", "")
+    # Şifrenin başındaki veya sonundaki görünmeyen gizli boşlukları siliyoruz
+    o_key = raw_key.strip()
     
-    # İnternet adresi ve şifre parametresi kesin olarak birbirinden ayrıldı
     url = "https://googleapis.com"
     parametreler = {"key": o_key}
     
@@ -29,12 +30,16 @@ def yapay_zeka_ile_konus(komut_metni):
     }
     
     try:
-        # Şifre sisteme harici bir parametre olarak güvenle bağlanıyor
         response = requests.post(url, params=parametreler, json=data, headers=headers, timeout=20)
+        
+        # Eğer Google şifreyi beğenmeyip hata kodu dönerse (Örn: 400 veya 403)
+        if response.status_code != 200:
+            return f"❌ Google API Şifre Hatası! Girdiğiniz anahtar geçersiz veya eksik. Lütfen Streamlit Secrets (Kasa) bölümünden şifrenizi kontrol edin. Sunucu yanıt kodu: {response.status_code}"
+            
         yanit_json = response.json()
         return yanit_json["candidates"]["content"]["parts"]["text"]
     except Exception as e:
-        return f"⚠️ Google Sunucu Hatası: {str(e)}"
+        return f"⚠️ Bağlantı Hatası: {str(e)}"
 
 # --- YAN PANEL AYARLARI ---
 with str_app.sidebar:
